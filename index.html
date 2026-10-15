@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>9×9 스도쿠 생성기</title>
+
+<style>
+@page {
+  size: A4 portrait;
+  margin: 12mm;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #f3f5f7;
+  color: #111;
+  font-family: "Noto Sans KR", "Malgun Gothic", Arial, sans-serif;
+}
+
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 25px 15px 40px;
+}
+
+h1 {
+  text-align: center;
+  margin: 0 0 8px;
+  font-size: 32px;
+}
+
+.description {
+  text-align: center;
+  color: #555;
+  margin-bottom: 20px;
+}
+
+.controls {
+  background: white;
+  border-radius: 12px;
+  padding: 18px;
+  box-shadow: 0 2px 10px rgba(0,0,0,.08);
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.difficulty {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.difficulty button,
+.action button {
+  border: 0;
+  border-radius: 8px;
+  padding: 11px 18px;
+  font-size: 15px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.difficulty button {
+  background: #e8eaed;
+  color: #333;
+}
+
+.difficulty button.active {
+  background: #333;
+  color: white;
+}
+
+.difficulty button.easy.active {
+  background: #2e7d32;
+}
+
+.difficulty button.medium.active {
+  background: #e6a700;
+  color: #111;
+}
+
+.difficulty button.hard.active {
+  background: #c62828;
+  color: white;
+}
+
+.action {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.action button {
+  background: #1976d2;
+  color: white;
+}
+
+.action button.answer-btn {
+  background: #d32f2f;
+}
+
+.action button.print-btn {
+  background: #555;
+}
+
+.status {
+  margin-top: 12px;
+  min-height: 20px;
+  font-size: 14px;
+  color: #555;
+}
+
+.paper {
+  background: white;
+  padding: 25px 20px 30px;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0,0,0,.08);
+  text-align: center;
+}
+
+.paper h2 {
+  margin: 0 0 5px;
+  font-size: 26px;
+}
+
+.paper .level {
+  margin-bottom: 20px;
+  color: #555;
+}
+
+.sudoku {
+  border-collapse: collapse;
+  width: min(90vw, 570px);
+  height: min(90vw, 570px);
+  margin: 0 auto;
+  table-layout: fixed;
+}
+
+.sudoku td {
+  border: 1px solid #888;
+  width: 11.11%;
+  height: 11.11%;
+  padding: 0;
+  text-align: center;
+  vertical-align: middle;
+  font-size: clamp(20px, 4vw, 31px);
+  font-weight: 500;
+}
+
+.sudoku tr:first-child td {
+  border-top: 3px solid #111;
+}
+
+.sudoku tr:nth-child(3n) td {
+  border-bottom: 3px solid #111;
+}
+
+.sudoku td:first-child {
+  border-left: 3px solid #111;
+}
+
+.sudoku td:nth-child(3n) {
+  border-right: 3px solid #111;
+}
+
+.sudoku .given {
+  color: #111;
+  font-weight: 600;
+}
+
+.sudoku .answer {
+  color: #d00000;
+  font-weight: 700;
+}
+
+.rules {
+  margin: 20px auto 0;
+  max-width: 570px;
+  color: #555;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.answer-area {
+  display: none;
+  margin-top: 30px;
+  padding-top: 25px;
+  border-top: 2px dashed #ddd;
+}
+
+.answer-area.visible {
+  display: block;
+}
+
+.answer-title {
+  color: #c00000;
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 15px;
+}
+
+.name-area {
+  display: flex;
+  justify-content: space-between;
+  max-width: 570px;
+  margin: 18px auto 0;
+  font-size: 13px;
+  color: #555;
+}
+
+.loading {
+  color: #1976d2;
+  font-weight: 600;
+}
+
+/* 인쇄 */
+@media print {
+  body {
+    background: white;
+  }
+
+  .container {
+    max-width: none;
+    padding: 0;
+  }
+
+  .controls,
+  .description,
+  .no-print {
+    display: none !important;
+  }
+
+  .paper {
+    box-shadow: none;
+    border-radius: 0;
+    padding: 5mm 0 0;
+  }
+
+  .sudoku {
+    width: 175mm;
+    height: 175mm;
+  }
+
+  .sudoku td {
+    font-size: 25px;
+  }
+
+  .answer-area {
+    display: block !important;
+    page-break-before: always;
+    border-top: 0;
+    padding-top: 5mm;
+  }
+
+  .rules {
+    margin-top: 8mm;
+  }
+
+  .name-area {
+    margin-top: 8mm;
+  }
+}
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+  <h1>🧩 9×9 스도쿠</h1>
+  <div class="description">
+    난이도를 선택하고 새로운 문제를 만들어 보세요.
+  </div>
+
+  <div class="controls no-print">
+
+```
+<div class="difficulty">
+  <button class="easy active" onclick="setDifficulty('easy')">
+    🟢 초급
+  </button>
+
+  <button class="medium" onclick="setDifficulty('medium')">
+    🟡 중급
+  </button>
+
+  <button class="hard" onclick="setDifficulty('hard')">
+    🔴 고급
+  </button>
+</div>
+
+<div class="action">
+  <button onclick="newPuzzle()">
+    🔄 새 문제 만들기
+  </button>
+
+  <button class="answer-btn" onclick="showAnswer()">
+    👀 정답 보기
+  </button>
+
+  <button class="print-btn" onclick="window.print()">
+    🖨️ 인쇄 / PDF 저장
+  </button>
+</div>
+
+<div class="status" id="status"></div>
+```
+
+  </div>
+
+  <div class="paper">
+
+```
+<h2>9×9 스도쿠</h2>
+<div class="level" id="levelText">초급</div>
+
+<table class="sudoku" id="puzzleBoard"></table>
+
+<div class="rules">
+  가로줄, 세로줄, 굵은 선으로 나뉜 3×3 영역마다
+  1부터 9까지의 숫자가 한 번씩만 들어갑니다.
+</div>
+
+<div class="name-area">
+  <span>이름: ________________________</span>
+  <span>날짜: ______________</span>
+</div>
+
+
+<div class="answer-area" id="answerArea">
+
+  <div class="answer-title">
+    정답
+  </div>
+
+  <table class="sudoku" id="answerBoard"></table>
+
+  <div class="rules">
+    빨간색 숫자가 문제에서 채워야 하는 정답입니다.
+  </div>
+
+</div>
+```
+
+  </div>
+</div>
+
+<script>
+
+/* =========================================================
+   스도쿠 생성기
+   - 완성된 정답판 생성
+   - 숫자 제거
+   - 제거할 때마다 유일해인지 검사
+   ========================================================= */
+
+let currentDifficulty = "easy";
+let puzzle = [];
+let solution = [];
+
+/*
+  목표 단서 수.
+  숫자가 적을수록 일반적으로 더 어렵습니다.
+*/
+const difficultySettings = {
+  easy: {
+    name: "초급",
+    clues: 40
+  },
+
+  medium: {
+    name: "중급",
+    clues: 32
+  },
+
+  hard: {
+    name: "고급",
+    clues: 26
+  }
+};
+
+
+/* 배열 섞기 */
+function shuffle(array) {
+  const arr = array.slice();
+
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+
+  return arr;
+}
+
+
+/* 빈 9×9 보드 */
+function emptyBoard() {
+  return Array.from(
+    { length: 9 },
+    () => Array(9).fill(0)
+  );
+}
+
+
+/* 해당 칸에 숫자를 넣을 수 있는지 검사 */
+function isValid(board, row, col, num) {
+
+  /* 가로 */
+  for (let c = 0; c < 9; c++) {
+    if (board[row][c] === num) {
+      return false;
+    }
+  }
+
+  /* 세로 */
+  for (let r = 0; r < 9; r++) {
+    if (board[r][col] === num) {
+      return false;
+    }
+  }
+
+  /* 3×3 */
+  const startRow = Math.floor(row / 3) * 3;
+  const startCol = Math.floor(col / 3) * 3;
+
+  for (let r = startRow; r < startRow + 3; r++) {
+    for (let c = startCol; c < startCol + 3; c++) {
+      if (board[r][c] === num) {
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
+
+/* 완성된 스도쿠 생성 */
+function generateSolution() {
+
+  const board = emptyBoard();
+
+  function solve() {
+
+    /* 빈칸 찾기 */
+    let row = -1;
+    let col = -1;
+
+    for (let r = 0; r < 9; r++) {
+      for (let c = 0; c < 9; c++) {
+
+        if (board[r][c] === 0) {
+          row = r;
+          col = c;
+          break;
+        }
+      }
+
+      if (row !== -1) {
+        break;
+      }
+    }
+
+    /* 빈칸이 없으면 완성 */
+    if (row === -1) {
+      return true;
+    }
+
+    const numbers = shuffle(
+      [1,2,3,4,5,6,7,8,9]
+    );
+
+    for (const num of numbers) {
+
+      if (isValid(board, row, col, num)) {
+
+        board[row][col] = num;
+
+        if (solve()) {
+          return true;
+        }
+
+        board[row][col] = 0;
+      }
+    }
+
+    return false;
+  }
+
+  solve();
+
+  return board;
+}
+
+
+/* 보드 복사 */
+function copyBoard(board) {
+  return board.map(row => row.slice());
+}
+
+
+/*
+  해의 개수를 세는 함수.
+  2개 이상이면 더 이상 검사할 필요가 없으므로
+  최대 2개까지만 찾습니다.
+*/
+function countSolutions(board, limit = 2) {
+
+  let count = 0;
+
+  function solve() {
+
+    if (count >= limit) {
+      return;
+    }
+
+    /* 가장 제약이 큰 빈칸 선택 */
+    let bestRow = -1;
+    let bestCol = -1;
+    let bestCandidates = null;
+
+    for (let r = 0; r < 9; r++) {
+      for (let c = 0; c < 9; c++) {
+
+        if (board[r][c] !== 0) {
+          continue;
+        }
+
+        const candidates = [];
+
+        for (let n = 1; n <= 9; n++) {
+
+          if (isValid(board, r, c, n)) {
+            candidates.push(n);
+          }
+        }
+
+        if (candidates.length === 0) {
+          return;
+        }
+
+        if (
+          bestCandidates === null ||
+          candidates.length < bestCandidates.length
+        ) {
+          bestRow = r;
+          bestCol = c;
+          bestCandidates = candidates;
+
+          if (candidates.length === 1) {
+            break;
+          }
+        }
+      }
+
+      if (
+        bestCandidates !== null &&
+        bestCandidates.length === 1
+      ) {
+        break;
+      }
+    }
+
+    /* 빈칸 없음 = 해 하나 발견 */
+    if (bestCandidates === null) {
+      count++;
+      return;
+    }
+
+    for (const num of bestCandidates) {
+
+      board[bestRow][bestCol] = num;
+
+      solve();
+
+      board[bestRow][bestCol] = 0;
+
+      if (count >= limit) {
+        return;
+      }
+    }
+  }
+
+  solve();
+
+  return count;
+}
+
+
+/*
+  유일해 문제 생성
+*/
+function makePuzzle(clues) {
+
+  solution = generateSolution();
+
+  puzzle = copyBoard(solution);
+
+  let positions = [];
+
+  for (let r = 0; r < 9; r++) {
+    for (let c = 0; c < 9; c++) {
+      positions.push([r, c]);
+    }
+  }
+
+  positions = shuffle(positions);
+
+  let currentClues = 81;
+
+  /*
+    목표 단서 수까지 제거.
+    제거 후 해가 하나뿐인지 검사합니다.
+  */
+  for (const [r, c] of positions) {
+
+    if (currentClues <= clues) {
+      break;
+    }
+
+    const backup = puzzle[r][c];
+
+    puzzle[r][c] = 0;
+
+    const testBoard = copyBoard(puzzle);
+
+    const solutions = countSolutions(testBoard, 2);
+
+    if (solutions === 1) {
+      currentClues--;
+    } else {
+      puzzle[r][c] = backup;
+    }
+  }
+
+  /*
+    혹시 목표 단서 수까지 내려가지 못한 경우에도
+    현재 퍼즐은 유일해입니다.
+  */
+  return puzzle;
+}
+
+
+/* 문제판 화면 표시 */
+function renderPuzzle() {
+
+  const board = document.getElementById("puzzleBoard");
+
+  board.innerHTML = "";
+
+  for (let r = 0; r < 9; r++) {
+
+    const tr = document.createElement("tr");
+
+    for (let c = 0; c < 9; c++) {
+
+      const td = document.createElement("td");
+
+      if (puzzle[r][c] !== 0) {
+        td.textContent = puzzle[r][c];
+        td.className = "given";
+      }
+
+      tr.appendChild(td);
+    }
+
+    board.appendChild(tr);
+  }
+}
+
+
+/* 정답판 화면 표시 */
+function renderAnswer() {
+
+  const board = document.getElementById("answerBoard");
+
+  board.innerHTML = "";
+
+  for (let r = 0; r < 9; r++) {
+
+    const tr = document.createElement("tr");
+
+    for (let c = 0; c < 9; c++) {
+
+      const td = document.createElement("td");
+
+      td.textContent = solution[r][c];
+
+      if (puzzle[r][c] !== 0) {
+        td.className = "given";
+      } else {
+        td.className = "answer";
+      }
+
+      tr.appendChild(td);
+    }
+
+    board.appendChild(tr);
+  }
+}
+
+
+/* 정답 보기 */
+function showAnswer() {
+
+  renderAnswer();
+
+  document
+    .getElementById("answerArea")
+    .classList.add("visible");
+}
+
+
+/* 난이도 선택 */
+function setDifficulty(level) {
+
+  currentDifficulty = level;
+
+  document
+    .querySelectorAll(".difficulty button")
+    .forEach(button => {
+      button.classList.remove("active");
+    });
+
+  if (level === "easy") {
+    document.querySelector(".easy").classList.add("active");
+  }
+
+  if (level === "medium") {
+    document.querySelector(".medium").classList.add("active");
+  }
+
+  if (level === "hard") {
+    document.querySelector(".hard").classList.add("active");
+  }
+
+  newPuzzle();
+}
+
+
+/* 새 문제 */
+function newPuzzle() {
+
+  const status = document.getElementById("status");
+
+  status.innerHTML =
+    '<span class="loading">새로운 유일해 스도쿠를 만드는 중입니다...</span>';
+
+  /*
+    브라우저가 상태 메시지를 먼저 표시하도록
+    약간 늦춰 생성합니다.
+  */
+  setTimeout(() => {
+
+    const setting =
+      difficultySettings[currentDifficulty];
+
+    makePuzzle(setting.clues);
+
+    document.getElementById("levelText").textContent =
+      setting.name +
+      " · 단서 " +
+      countClues(puzzle) +
+      "개";
+
+    renderPuzzle();
+
+    document
+      .getElementById("answerArea")
+      .classList.remove("visible");
+
+    status.textContent =
+      "완성되었습니다. 정답은 하나뿐인 퍼즐입니다.";
+
+  }, 30);
+}
+
+
+/* 단서 개수 */
+function countClues(board) {
+
+  let count = 0;
+
+  for (let r = 0; r < 9; r++) {
+    for (let c = 0; c < 9; c++) {
+
+      if (board[r][c] !== 0) {
+        count++;
+      }
+    }
+  }
+
+  return count;
+}
+
+
+/* 처음 실행 */
+newPuzzle();
+
+</script>
+
+</body>
+</html>
